@@ -12,7 +12,7 @@
 # Run this bash script in the new working directory.
 # The compiled static library will exist in $BUILD_DIR_NAME, which is "build_libzmq" for my case.
 
-export TARGETS=(armv7 armv7s i386);
+export TARGETS=(armv7 armv7s i386 x86_64 arm64);
 export ZMQ_DIR_NAME="zeromq-4.0.5";
 export SODIUM_DIR_NAME="libsodium-1.0.2";
 export BUILD_DIR_NAME="build_libzmq";
@@ -31,6 +31,18 @@ setenv()
             export BUILD_HOST="arm-apple-darwin11";
             echo "Setting BUILD_HOST as $BUILD_HOST";
             export SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk";
+            echo "Setting SYSROOT as $SYSROOT";
+            ;;
+        "arm64")
+            export BUILD_HOST="aarch64-apple-darwin";
+            echo "Setting BUILD_HOST as $BUILD_HOST";
+            export SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk";
+            echo "Setting SYSROOT as $SYSROOT";
+            ;;
+        "x86_64")
+            export BUILD_HOST="x86_64-apple-darwin";
+            echo "Setting BUILD_HOST as $BUILD_HOST";
+            export SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk";
             echo "Setting SYSROOT as $SYSROOT";
             ;;
         "i386")
@@ -76,10 +88,16 @@ create_universal_library()
 {
     echo "Creating universal static library"
     mkdir -p "`pwd`/$BUILD_DIR_NAME/universal/lib"
-    lipo -create "`pwd`/$BUILD_DIR_NAME/${TARGETS[0]}/lib/libzmq.a" \
-                "`pwd`/$BUILD_DIR_NAME/${TARGETS[1]}/lib/libzmq.a" \
-                "`pwd`/$BUILD_DIR_NAME/${TARGETS[2]}/lib/libzmq.a" \
-         -output "`pwd`/$BUILD_DIR_NAME/universal/lib/libzmq.a"
+
+    PATH_TO_ALL_TARGETS=""
+    for target in ${TARGETS[*]}
+    do
+        PATH_TO_TARGET="`pwd`/$BUILD_DIR_NAME/$target/lib/libzmq.a"
+        PATH_TO_ALL_TARGETS=$PATH_TO_ALL_TARGETS" "$PATH_TO_TARGET
+    done
+
+    lipo -create $PATH_TO_ALL_TARGETS -output "`pwd`/$BUILD_DIR_NAME/universal/lib/libzmq.a"
+
     echo "Checking that our universal static library has been compiled correctly"
     lipo -info "`pwd`/$BUILD_DIR_NAME/universal/lib/libzmq.a"
 }
